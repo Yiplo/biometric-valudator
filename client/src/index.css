@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -31,8 +33,6 @@
   --dark-surface: hsl(215, 28%, 17%);
   --dark-border: hsl(217, 33%, 33%);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   * {

@@ -97,9 +97,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-4 text-xs text-gray-500 text-center font-mono">
-            Credenciales por defecto: admin / Keylog100$
-          </div>
+
         </CardContent>
       </Card>
     </div>
