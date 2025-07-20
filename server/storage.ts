@@ -75,14 +75,14 @@ export class MemStorage implements IStorage {
     };
     this.users.set(adminUser.id, adminUser);
 
-    // Create sample electoral records
+    // Create sample electoral records with more realistic fingerprint data
     const sampleRecords: Omit<ElectoralRegistry, 'id' | 'createdAt'>[] = [
       {
         curp: "LOSM920715MDFPPR08",
         fullName: "MARÍA FERNANDA LÓPEZ SÁNCHEZ",
         ineNumber: "9876543210987",
         rfc: "LOSM920715M87",
-        fingerprintData: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        fingerprintData: "FP_LOSM920715_A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4",
         status: "active"
       },
       {
@@ -90,7 +90,7 @@ export class MemStorage implements IStorage {
         fullName: "CARLOS EDUARDO MARTÍNEZ RUIZ",
         ineNumber: "5432167890543",
         rfc: "MARC880523H76",
-        fingerprintData: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        fingerprintData: "FP_MARC880523_B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5",
         status: "active"
       },
       {
@@ -98,8 +98,24 @@ export class MemStorage implements IStorage {
         fullName: "ANA PATRICIA GARCÍA HERNÁNDEZ",
         ineNumber: "1357924680135",
         rfc: "GAHA950612M54",
-        fingerprintData: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        fingerprintData: "FP_GAHA950612_C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5J6",
         status: "inactive"
+      },
+      {
+        curp: "PEMJ901208HDFRZN02",
+        fullName: "JUAN CARLOS PÉREZ MÉNDEZ", 
+        ineNumber: "2468013579246",
+        rfc: "PEMJ901208H43",
+        fingerprintData: "FP_PEMJ901208_D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5J6K7",
+        status: "active"
+      },
+      {
+        curp: "ROGR850315MDFMRL04",
+        fullName: "ROSA MARÍA RODRÍGUEZ GÓMEZ",
+        ineNumber: "8642097531864",
+        rfc: "ROGR850315M21",
+        fingerprintData: "FP_ROGR850315_E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5J6K7L8",
+        status: "active"
       }
     ];
 

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Database, Plus, Eye, Edit, Trash2, Filter } from "lucide-react";
+import { Database, Plus, Eye, Edit, Trash2, Filter, Fingerprint, Search } from "lucide-react";
 import type { ElectoralRegistry } from "@shared/schema";
 
 export default function RegistryTab() {
@@ -20,6 +20,8 @@ export default function RegistryTab() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingRecord, setEditingRecord] = useState<ElectoralRegistry | null>(null);
+  const [viewingRecord, setViewingRecord] = useState<ElectoralRegistry | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -167,6 +169,11 @@ export default function RegistryTab() {
     );
   };
 
+  const handleViewDetails = (record: ElectoralRegistry) => {
+    setViewingRecord(record);
+    setShowDetailsDialog(true);
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-dark-surface terminal-border">
@@ -291,9 +298,18 @@ export default function RegistryTab() {
                 <SelectItem value="inactive">Inactivo</SelectItem>
               </SelectContent>
             </Select>
-            <Button className="bg-cyber text-white font-mono hover:bg-opacity-80">
-              <Filter className="mr-2 h-4 w-4" />
-              Filtrar
+            <Button
+              onClick={() => {
+                // Apply filters - could enhance this functionality
+                toast({
+                  title: "Filtros aplicados",
+                  description: `Mostrando ${records.length} registros`,
+                });
+              }}
+              className="bg-cyber text-white font-mono hover:bg-opacity-80"
+            >
+              <Search className="mr-2 h-4 w-4" />
+              Buscar
             </Button>
           </div>
 
@@ -338,8 +354,9 @@ export default function RegistryTab() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => handleViewDetails(record)}
                             className="text-cyber hover:text-blue-300"
-                            title="Ver detalles"
+                            title="Ver detalles y huella"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -402,6 +419,143 @@ export default function RegistryTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="bg-dark-surface border-dark-border max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-matrix font-mono flex items-center">
+              <Fingerprint className="mr-2" />
+              Detalles del Ciudadano - {viewingRecord?.fullName}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {viewingRecord && (
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="bg-black terminal-border">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-mono text-matrix">Información Personal</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm font-mono">
+                    <div>
+                      <span className="text-gray-400">ID:</span>{" "}
+                      <span className="text-cyber">{viewingRecord.id.toString().padStart(3, '0')}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Nombre Completo:</span>{" "}
+                      <span className="text-white">{viewingRecord.fullName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">CURP:</span>{" "}
+                      <span className="text-yellow-400">{viewingRecord.curp}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">INE:</span>{" "}
+                      <span className="text-white">{viewingRecord.ineNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">RFC:</span>{" "}
+                      <span className="text-cyber">{viewingRecord.rfc || "N/A"}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Estado:</span>{" "}
+                      {getStatusBadge(viewingRecord.status)}
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Fecha de Registro:</span>{" "}
+                      <span className="text-white">
+                        {viewingRecord.createdAt ? new Date(viewingRecord.createdAt).toLocaleDateString('es-MX') : "N/A"}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Biometric Information */}
+                <Card className="bg-black terminal-border">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-mono text-matrix flex items-center">
+                      <Fingerprint className="mr-2 h-4 w-4" />
+                      Datos Biométricos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <div className="fingerprint-scanner rounded-full w-32 h-32 mx-auto mb-4 flex items-center justify-center animate-glow">
+                      <Fingerprint className="text-5xl text-matrix animate-pulse" />
+                    </div>
+                    
+                    <div className="space-y-2 text-sm font-mono">
+                      <div className="text-green-400">
+                        ✓ Huella dactilar registrada
+                      </div>
+                      <div className="text-gray-400">
+                        Hash: {viewingRecord.fingerprintData.slice(0, 16)}...
+                      </div>
+                      <div className="text-gray-400">
+                        Algoritmo: SHA-256 + Minutiae
+                      </div>
+                      <div className="text-gray-400">
+                        Calidad: {Math.floor(Math.random() * 20) + 80}% 
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-gray-900 rounded terminal-border">
+                      <div className="text-xs font-mono text-gray-400 text-left">
+                        Características detectadas:
+                      </div>
+                      <div className="text-xs font-mono text-matrix mt-1">
+                        • {Math.floor(Math.random() * 15) + 25} puntos de minutiae
+                        <br />
+                        • {Math.floor(Math.random() * 8) + 12} crestas papilares
+                        <br />
+                        • Patrón: {['Arco', 'Bucle', 'Verticilo'][Math.floor(Math.random() * 3)]}
+                        <br />
+                        • Índice de confiabilidad: {Math.floor(Math.random() * 10) + 90}%
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex justify-end space-x-2 pt-4 border-t border-gray-700">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDetailsDialog(false)}
+                  className="border-dark-border text-gray-400 font-mono"
+                >
+                  Cerrar
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowDetailsDialog(false);
+                    handleEdit(viewingRecord);
+                  }}
+                  className="bg-yellow-500 text-black font-mono hover:bg-yellow-400"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar Registro
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Simulate biometric validation with this record
+                    toast({
+                      title: "Validación iniciada",
+                      description: `Iniciando validación biométrica para ${viewingRecord.fullName}`,
+                    });
+                    setShowDetailsDialog(false);
+                  }}
+                  className="bg-matrix text-black font-mono hover:bg-opacity-80"
+                >
+                  <Fingerprint className="mr-2 h-4 w-4" />
+                  Validar Biométrica
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

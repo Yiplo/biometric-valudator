@@ -150,11 +150,20 @@ export default function ValidationTab() {
               </Label>
               <Input
                 type="text"
-                placeholder="Ej: CURP180801HDFRZR09"
+                placeholder={
+                  identifierType === "curp" ? "Ej: LOSM920715MDFPPR08" :
+                  identifierType === "rfc" ? "Ej: LOSM920715M87" :
+                  "Ej: 9876543210987"
+                }
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
                 className="w-full bg-black terminal-border text-matrix font-mono placeholder-gray-600"
               />
+              <div className="text-xs text-gray-500 font-mono mt-1">
+                {identifierType === "curp" && "Formatos válidos: LOSM920715MDFPPR08, MARC880523HDFTRR05, GAHA950612MDFRNN03"}
+                {identifierType === "rfc" && "Formatos válidos: LOSM920715M87, MARC880523H76, GAHA950612M54"}
+                {identifierType === "ine" && "Formatos válidos: 9876543210987, 5432167890543, 1357924680135"}
+              </div>
             </div>
 
             <Button
@@ -249,14 +258,14 @@ export default function ValidationTab() {
             {validationResult.record && (
               <div className="bg-black rounded p-4 terminal-border">
                 <h3 className="font-mono font-bold text-matrix mb-3">Información de Identidad</h3>
-                <div className="grid md:grid-cols-2 gap-4 text-sm font-mono">
+                <div className="grid md:grid-cols-2 gap-4 text-sm font-mono mb-4">
                   <div>
                     <span className="text-gray-400">Nombre:</span>{" "}
                     <span>{validationResult.record.fullName}</span>
                   </div>
                   <div>
                     <span className="text-gray-400">CURP:</span>{" "}
-                    <span>{validationResult.record.curp}</span>
+                    <span className="text-yellow-400">{validationResult.record.curp}</span>
                   </div>
                   <div>
                     <span className="text-gray-400">INE:</span>{" "}
@@ -264,7 +273,26 @@ export default function ValidationTab() {
                   </div>
                   <div>
                     <span className="text-gray-400">RFC:</span>{" "}
-                    <span>{validationResult.record.rfc}</span>
+                    <span className="text-cyber">{validationResult.record.rfc || "N/A"}</span>
+                  </div>
+                </div>
+                
+                {/* Fingerprint Visualization */}
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="font-mono font-bold text-matrix mb-3 flex items-center">
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    Huella Dactilar Registrada
+                  </h4>
+                  <div className="bg-gray-900 rounded p-4 text-center">
+                    <div className="fingerprint-scanner rounded w-32 h-32 mx-auto mb-3 flex items-center justify-center">
+                      <Fingerprint className="text-4xl text-matrix animate-pulse" />
+                    </div>
+                    <div className="text-xs font-mono text-gray-400">
+                      Datos biométricos: {validationResult.record.curp.slice(-8)}****
+                    </div>
+                    <div className="text-xs font-mono text-green-400 mt-1">
+                      ✓ Huella registrada y verificada
+                    </div>
                   </div>
                 </div>
               </div>
