@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { UserSearch, Fingerprint, Hand, TrendingUp } from "lucide-react";
+import { UserSearch, Fingerprint, Hand, TrendingUp, Eye, User } from "lucide-react";
+import type { ElectoralRegistry } from "@shared/schema";
 
 interface ValidationResult {
   matchingPercentage: number;
@@ -25,11 +27,15 @@ interface ValidationResult {
 }
 
 export default function ValidationTab() {
-  const [identifierType, setIdentifierType] = useState<"curp" | "ine" | "rfc">("curp");
+  const [identifierType, setIdentifierType] = useState<"curp" | "rfc">("curp");
   const [identifier, setIdentifier] = useState("");
   const [fingerprintData, setFingerprintData] = useState("");
   const [isCapturing, setIsCapturing] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [searchResults, setSearchResults] = useState<ElectoralRegistry[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<ElectoralRegistry | null>(null);
+  const [showRecordDetail, setShowRecordDetail] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -50,46 +56,78 @@ export default function ValidationTab() {
     });
   };
 
-  // Search mutation
-  const searchMutation = useMutation({
-    mutationFn: async () => {
-      if (!identifier) {
-        throw new Error("Identificador requerido");
+  // Fetch all electoral records for searching
+  const { data: allRecords = [], isLoading: isLoadingRecords } = useQuery<ElectoralRegistry[]>({
+    queryKey: ["/api/padron"],
+  });
+
+  // Search function
+  const performSearch = () => {
+    if (!identifier.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Campo requerido",
+        description: "Ingresa un RFC o CURP para buscar",
+      });
+      return;
+    }
+
+    const searchTerm = identifier.trim().toUpperCase();
+    const results = allRecords.filter(record => {
+      if (identifierType === "curp") {
+        return record.curp.includes(searchTerm);
+      } else {
+        return record.rfc?.includes(searchTerm);
+      }
+    });
+
+    setSearchResults(results);
+    setShowSearchResults(true);
+    setValidationResult(null);
+
+    toast({
+      title: "Búsqueda completada",
+      description: `Se encontraron ${results.length} resultado(s)`,
+    });
+  };
+
+  // Select a record from search results
+  const selectRecord = (record: ElectoralRegistry) => {
+    setSelectedRecord(record);
+    setShowRecordDetail(true);
+    setShowSearchResults(false);
+  };
+
+  // Individual record validation mutation
+  const validateRecordMutation = useMutation({
+    mutationFn: async (record: ElectoralRegistry) => {
+      if (!fingerprintData) {
+        throw new Error("Primero captura una huella dactilar");
       }
 
-      const response = await apiRequest("POST", "/api/institucion/verificar-identidad", {
-        identifier,
-        identifierType,
-        fingerprintData: fingerprintData || undefined
+      const response = await apiRequest("POST", "/api/biometria/validar", {
+        curp: record.curp,
+        fingerprintData
       });
       return response.json();
     },
-    onSuccess: (data) => {
-      if (data.found) {
-        setValidationResult({
-          matchingPercentage: data.biometric?.matchingPercentage || 0,
-          status: data.biometric?.status || "no_biometric",
-          threshold: data.biometric?.threshold || 85,
-          record: data.record
-        });
-        
-        toast({
-          title: "Búsqueda exitosa",
-          description: "Registro encontrado en el padrón electoral",
-        });
-      } else {
-        setValidationResult(null);
-        toast({
-          variant: "destructive",
-          title: "No encontrado",
-          description: "El identificador no existe en el padrón electoral",
-        });
-      }
+    onSuccess: (data, record) => {
+      setValidationResult({
+        matchingPercentage: data.matchingPercentage || 0,
+        status: data.status || "failed",
+        threshold: data.threshold || 85,
+        record: record
+      });
+      
+      toast({
+        title: data.status === "success" ? "Validación exitosa" : "Validación fallida",
+        description: `Coincidencia: ${data.matchingPercentage}%`,
+      });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error en la búsqueda",
+        title: "Error en validación",
         description: error.message || "Error desconocido",
       });
     }
@@ -138,7 +176,6 @@ export default function ValidationTab() {
                 </SelectTrigger>
                 <SelectContent className="bg-black border-dark-border">
                   <SelectItem value="curp">CURP</SelectItem>
-                  <SelectItem value="ine">INE</SelectItem>
                   <SelectItem value="rfc">RFC</SelectItem>
                 </SelectContent>
               </Select>
@@ -152,27 +189,25 @@ export default function ValidationTab() {
                 type="text"
                 placeholder={
                   identifierType === "curp" ? "Ej: LOSM920715MDFPPR08" :
-                  identifierType === "rfc" ? "Ej: LOSM920715M87" :
-                  "Ej: 9876543210987"
+                  "Ej: LOSM920715M87"
                 }
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
                 className="w-full bg-black terminal-border text-matrix font-mono placeholder-gray-600"
               />
               <div className="text-xs text-gray-500 font-mono mt-1">
-                {identifierType === "curp" && "Formatos válidos: LOSM920715MDFPPR08, MARC880523HDFTRR05, GAHA950612MDFRNN03"}
-                {identifierType === "rfc" && "Formatos válidos: LOSM920715M87, MARC880523H76, GAHA950612M54"}
-                {identifierType === "ine" && "Formatos válidos: 9876543210987, 5432167890543, 1357924680135"}
+                {identifierType === "curp" && "Busca parcial o completa. Ej: LOSM920715MDFPPR08, MARC880523HDFTRR05"}
+                {identifierType === "rfc" && "Busca parcial o completa. Ej: LOSM920715M87, MARC880523H76"}
               </div>
             </div>
 
             <Button
-              onClick={() => searchMutation.mutate()}
-              disabled={searchMutation.isPending || !identifier}
+              onClick={performSearch}
+              disabled={isLoadingRecords || !identifier}
               className="w-full bg-cyber text-white font-mono font-bold py-3 px-4 hover:bg-opacity-80 transition-all"
             >
               <UserSearch className="mr-2 h-4 w-4" />
-              {searchMutation.isPending ? "BUSCANDO..." : "BUSCAR EN PADRÓN"}
+              {isLoadingRecords ? "CARGANDO..." : "BUSCAR EN PADRÓN"}
             </Button>
           </CardContent>
         </Card>
