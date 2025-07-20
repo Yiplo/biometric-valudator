@@ -44,14 +44,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check IP restrictions for specific users
       if (user.allowedIPs && user.allowedIPs.length > 0) {
         const clientIP = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string;
-        const isAllowedIP = user.allowedIPs.some(allowedIP => 
-          clientIP === allowedIP || 
-          clientIP?.includes(allowedIP) ||
-          allowedIP.includes(clientIP || '')
-        );
+        
+        // Clean and normalize IP addresses
+        const normalizeIP = (ip: string) => {
+          if (!ip) return '';
+          // Remove port numbers and clean up
+          return ip.replace(/^::ffff:/, '').split(':')[0].split(',')[0].trim();
+        };
+        
+        const normalizedClientIP = normalizeIP(clientIP || '');
+        
+        const isAllowedIP = user.allowedIPs.some(allowedIP => {
+          const normalizedAllowedIP = normalizeIP(allowedIP);
+          return normalizedClientIP === normalizedAllowedIP || 
+                 normalizedClientIP.includes(normalizedAllowedIP) ||
+                 normalizedAllowedIP.includes(normalizedClientIP) ||
+                 clientIP === allowedIP ||
+                 clientIP?.includes(allowedIP) ||
+                 allowedIP.includes(clientIP || '');
+        });
         
         if (!isAllowedIP) {
-          console.log(`[AUTH] User '${user.username}' attempted login from unauthorized IP: ${clientIP}`);
+          console.log(`[AUTH] User '${user.username}' attempted login from unauthorized IP: ${clientIP} (normalized: ${normalizedClientIP})`);
+          console.log(`[AUTH] Allowed IPs for ${user.username}:`, user.allowedIPs);
           return res.status(403).json({ message: "Access denied from this IP address" });
         }
       }

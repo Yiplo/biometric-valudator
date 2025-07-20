@@ -69,18 +69,28 @@ export class MemStorage implements IStorage {
     // Create multiple admin users
     const adminPassword = await bcrypt.hash("Keylog100$", 10);
     const adminUsers = [
-      { username: "admin", displayName: "Administrador Principal" },
-      { username: "admin1", displayName: "Administrador 1" },
-      { username: "admin2", displayName: "Administrador 2" },
-      { username: "admin3", displayName: "Administrador 3" },
-      { username: "admin4", displayName: "Administrador 4" }
+      { username: "admin", displayName: "Administrador Principal", allowedIPs: [] },
+      { username: "admin1", displayName: "Administrador 1", allowedIPs: [] },
+      { username: "admin2", displayName: "Administrador 2", allowedIPs: [] },
+      { username: "admin3", displayName: "Administrador 3", allowedIPs: [] },
+      { 
+        username: "admin4", 
+        displayName: "Administrador 4", 
+        allowedIPs: [
+          "192.168.1.93",
+          "fe80::5848:9fff:fe80:4a6b",
+          "2806:103e:2:306:5848:9fff:fe80:4a6b",
+          "2806:103e:2:306:ac1c:e60b:e4c7:6ece"
+        ]
+      }
     ];
 
     for (const admin of adminUsers) {
       const adminUser: User = {
         id: this.currentUserId++,
         username: admin.username,
-        password: adminPassword
+        password: adminPassword,
+        allowedIPs: admin.allowedIPs
       };
       this.users.set(adminUser.id, adminUser);
     }
