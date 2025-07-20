@@ -77,6 +77,16 @@ export class MemStorage implements IStorage {
         username: "admin4", 
         displayName: "Administrador 4", 
         allowedIPs: []
+      },
+      { 
+        username: "admin5", 
+        displayName: "Administrador 5", 
+        allowedIPs: []
+      },
+      { 
+        username: "admin6", 
+        displayName: "Administrador 6", 
+        allowedIPs: []
       }
     ];
 

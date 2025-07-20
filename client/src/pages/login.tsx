@@ -13,7 +13,9 @@ const adminUsers = [
   { value: "admin1", label: "Administrador 1" },
   { value: "admin2", label: "Administrador 2" },
   { value: "admin3", label: "Administrador 3" },
-  { value: "admin4", label: "admin 4- estedenisfacio99@gmail.com" }
+  { value: "admin4", label: "admin 4- estedenisfacio99@gmail.com" },
+  { value: "admin5", label: "Administrador 5" },
+  { value: "admin6", label: "Administrador 6" }
 ];
 
 export default function Login() {
