@@ -41,6 +41,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Log successful login
+      console.log(`[AUTH] User '${user.username}' logged in successfully from ${req.ip || 'unknown IP'}`);
+      
       res.json({ 
         success: true, 
         user: { id: user.id, username: user.username }

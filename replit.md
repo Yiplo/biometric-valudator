@@ -2,7 +2,17 @@
 
 ## Overview
 
-This is a full-stack biometric authentication system built with React (frontend), Express.js (backend), and PostgreSQL (database). The system provides functionality for biometric validation, electoral registry management, and validation history tracking. It features a modern cyberpunk-themed UI with shadcn/ui components and uses Drizzle ORM for database operations.
+This is a full-stack biometric authentication system built with React (frontend), Express.js (backend), and in-memory storage. The system provides functionality for biometric validation, electoral registry management, and validation history tracking. It features a modern cyberpunk-themed UI with shadcn/ui components and simulates a professional biometric validation platform.
+
+## Recent Changes
+
+**January 2025 - Multi-User Authentication & Enhanced Features:**
+- Implemented multiple administrator accounts (admin, admin1-admin4) with unified password
+- Added dropdown user selector in login interface with professional labels
+- Enhanced biometric visualization with detailed fingerprint display modals
+- Improved search functionality with RFC/CURP specific placeholders
+- Added 5 sample electoral records with realistic fingerprint data simulation
+- Implemented comprehensive user detail views with biometric characteristics
 
 ## User Preferences
 

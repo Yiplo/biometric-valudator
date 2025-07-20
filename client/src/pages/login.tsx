@@ -4,8 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Fingerprint, Lock } from "lucide-react";
+import { Fingerprint, Lock, Users } from "lucide-react";
+
+const adminUsers = [
+  { value: "admin", label: "Administrador Principal" },
+  { value: "admin1", label: "Administrador 1" },
+  { value: "admin2", label: "Administrador 2" },
+  { value: "admin3", label: "Administrador 3" },
+  { value: "admin4", label: "Administrador 4" }
+];
 
 export default function Login() {
   const [username, setUsername] = useState("admin");
@@ -20,9 +29,10 @@ export default function Login() {
     try {
       const response = await auth.login(username, password);
       auth.setStoredUser(response.user);
+      const userLabel = adminUsers.find(admin => admin.value === response.user.username)?.label || response.user.username;
       toast({
         title: "Acceso autorizado",
-        description: "Sesión iniciada correctamente",
+        description: `Sesión iniciada como ${userLabel}`,
       });
       // Force page reload to trigger router update
       window.location.reload();
@@ -56,22 +66,28 @@ export default function Login() {
             <div className="text-matrix mb-2">root@biometric-portal:~$ auth --login</div>
             <div className="text-gray-400 mb-1">Iniciando sesión segura...</div>
             <div className="text-cyber">
-              <span className="typing-effect">Autenticación requerida</span>
+              <span className="typing-effect">Seleccione usuario administrativo</span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label className="block text-gray-300 text-sm font-mono mb-2">
-                Usuario:
+              <Label className="block text-gray-300 text-sm font-mono mb-2 flex items-center">
+                <Users className="mr-2 h-4 w-4" />
+                Seleccionar Usuario:
               </Label>
-              <Input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-black terminal-border text-matrix font-mono focus:shadow-lg focus:shadow-matrix/20"
-                required
-              />
+              <Select value={username} onValueChange={setUsername}>
+                <SelectTrigger className="w-full bg-black terminal-border text-matrix font-mono focus:shadow-lg focus:shadow-matrix/20">
+                  <SelectValue placeholder="Selecciona un administrador" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border-dark-border">
+                  {adminUsers.map((admin) => (
+                    <SelectItem key={admin.value} value={admin.value} className="text-matrix font-mono hover:bg-gray-800">
+                      {admin.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="mb-6">

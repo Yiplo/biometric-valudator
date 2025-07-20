@@ -66,7 +66,15 @@ export default function Dashboard() {
               <span className="animate-pulse ml-1 text-matrix">●</span>
             </div>
             <div className="text-sm font-mono text-gray-400">
-              Usuario: {user?.username}
+              <span className="text-gray-400">Usuario:</span>{" "}
+              <span className="text-matrix">
+                {user?.username === "admin" ? "Administrador Principal" :
+                 user?.username === "admin1" ? "Administrador 1" :
+                 user?.username === "admin2" ? "Administrador 2" :
+                 user?.username === "admin3" ? "Administrador 3" :
+                 user?.username === "admin4" ? "Administrador 4" :
+                 user?.username}
+              </span>
             </div>
             <Button
               onClick={handleLogout}

@@ -66,14 +66,24 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeData() {
-    // Create admin user
+    // Create multiple admin users
     const adminPassword = await bcrypt.hash("Keylog100$", 10);
-    const adminUser: User = {
-      id: this.currentUserId++,
-      username: "admin",
-      password: adminPassword
-    };
-    this.users.set(adminUser.id, adminUser);
+    const adminUsers = [
+      { username: "admin", displayName: "Administrador Principal" },
+      { username: "admin1", displayName: "Administrador 1" },
+      { username: "admin2", displayName: "Administrador 2" },
+      { username: "admin3", displayName: "Administrador 3" },
+      { username: "admin4", displayName: "Administrador 4" }
+    ];
+
+    for (const admin of adminUsers) {
+      const adminUser: User = {
+        id: this.currentUserId++,
+        username: admin.username,
+        password: adminPassword
+      };
+      this.users.set(adminUser.id, adminUser);
+    }
 
     // Create sample electoral records with more realistic fingerprint data
     const sampleRecords: Omit<ElectoralRegistry, 'id' | 'createdAt'>[] = [
