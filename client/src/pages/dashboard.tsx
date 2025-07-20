@@ -72,7 +72,7 @@ export default function Dashboard() {
                  user?.username === "admin1" ? "Administrador 1" :
                  user?.username === "admin2" ? "Administrador 2" :
                  user?.username === "admin3" ? "Administrador 3" :
-                 user?.username === "admin4" ? "Administrador 4" :
+                 user?.username === "admin4" ? "admin 4- estedenisfacio99@gmail.com" :
                  user?.username}
               </span>
             </div>
