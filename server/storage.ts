@@ -107,7 +107,9 @@ export class MemStorage implements IStorage {
       const electoralRecord: ElectoralRegistry = {
         ...record,
         id: this.currentElectoralId++,
-        createdAt: new Date()
+        createdAt: new Date(),
+        status: record.status || "active",
+        rfc: record.rfc || null
       };
       this.electoralRecords.set(electoralRecord.id, electoralRecord);
     }
@@ -122,7 +124,8 @@ export class MemStorage implements IStorage {
     for (const institution of sampleInstitutions) {
       const inst: Institution = {
         ...institution,
-        id: this.currentInstitutionId++
+        id: this.currentInstitutionId++,
+        active: institution.active !== undefined ? institution.active : true
       };
       this.institutionsMap.set(inst.id, inst);
     }
@@ -156,7 +159,8 @@ export class MemStorage implements IStorage {
       const historyRecord: ValidationHistory = {
         ...history,
         id: this.currentValidationId++,
-        timestamp: new Date()
+        timestamp: new Date(),
+        ipAddress: history.ipAddress || null
       };
       this.validationHistoryRecords.set(historyRecord.id, historyRecord);
     }
@@ -215,7 +219,9 @@ export class MemStorage implements IStorage {
     const record: ElectoralRegistry = {
       ...insertRecord,
       id: this.currentElectoralId++,
-      createdAt: new Date()
+      createdAt: new Date(),
+      status: insertRecord.status || "active",
+      rfc: insertRecord.rfc || null
     };
     this.electoralRecords.set(record.id, record);
     return record;
@@ -239,7 +245,8 @@ export class MemStorage implements IStorage {
     const validation: ValidationHistory = {
       ...insertValidation,
       id: this.currentValidationId++,
-      timestamp: new Date()
+      timestamp: new Date(),
+      ipAddress: insertValidation.ipAddress || null
     };
     this.validationHistoryRecords.set(validation.id, validation);
     return validation;
@@ -269,7 +276,8 @@ export class MemStorage implements IStorage {
   async createInstitution(insertInstitution: InsertInstitution): Promise<Institution> {
     const institution: Institution = {
       ...insertInstitution,
-      id: this.currentInstitutionId++
+      id: this.currentInstitutionId++,
+      active: insertInstitution.active !== undefined ? insertInstitution.active : true
     };
     this.institutionsMap.set(institution.id, institution);
     return institution;
