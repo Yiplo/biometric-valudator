@@ -2,555 +2,602 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Database, Plus, Eye, Edit, Trash2, Filter, Fingerprint, Search } from "lucide-react";
+import { UserSearch, Fingerprint, Hand, TrendingUp, Eye, User, Database, Calendar } from "lucide-react";
 import type { ElectoralRegistry } from "@shared/schema";
 
+interface ValidationResult {
+  matchingPercentage: number;
+  status: string;
+  threshold: number;
+  record?: {
+    curp: string;
+    fullName: string;
+    ineNumber: string;
+    rfc: string;
+    status: string;
+  };
+}
+
 export default function RegistryTab() {
-  const [searchName, setSearchName] = useState("");
-  const [searchCurp, setSearchCurp] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<ElectoralRegistry | null>(null);
-  const [viewingRecord, setViewingRecord] = useState<ElectoralRegistry | null>(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [identifierType, setIdentifierType] = useState<"curp" | "rfc">("curp");
+  const [identifier, setIdentifier] = useState("");
+  const [fingerprintData, setFingerprintData] = useState("");
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [searchResults, setSearchResults] = useState<ElectoralRegistry[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<ElectoralRegistry | null>(null);
+  const [showRecordDetail, setShowRecordDetail] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Form state for new/edit record
-  const [formData, setFormData] = useState({
-    curp: "",
-    fullName: "",
-    ineNumber: "",
-    rfc: "",
-    fingerprintData: "",
-    status: "active"
+  // Get current date
+  const currentDate = new Date().toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
   });
 
-  // Fetch electoral records
-  const { data: records = [], isLoading } = useQuery({
-    queryKey: ["/api/padron"],
-    select: (data: ElectoralRegistry[]) => {
-      return data.filter(record => {
-        const matchesName = !searchName || record.fullName.toLowerCase().includes(searchName.toLowerCase());
-        const matchesCurp = !searchCurp || record.curp.includes(searchCurp);
-        const matchesStatus = statusFilter === "all" || record.status === statusFilter;
-        return matchesName && matchesCurp && matchesStatus;
-      });
-    }
-  });
-
-  // Create mutation
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/padron", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/padron"] });
-      setShowAddDialog(false);
-      resetForm();
-      toast({
-        title: "Registro creado",
-        description: "El registro ha sido agregado al padrón electoral",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Error al crear registro",
-        description: error.message || "Error desconocido",
-      });
-    }
-  });
-
-  // Update mutation
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await apiRequest("PUT", `/api/padron/${id}`, data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/padron"] });
-      setEditingRecord(null);
-      resetForm();
-      toast({
-        title: "Registro actualizado",
-        description: "Los datos han sido actualizados correctamente",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Error al actualizar registro",
-        description: error.message || "Error desconocido",
-      });
-    }
-  });
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/padron/${id}`);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/padron"] });
-      toast({
-        title: "Registro eliminado",
-        description: "El registro ha sido eliminado del padrón electoral",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar registro",
-        description: error.message || "Error desconocido",
-      });
-    }
-  });
-
-  const resetForm = () => {
-    setFormData({
-      curp: "",
-      fullName: "",
-      ineNumber: "",
-      rfc: "",
-      fingerprintData: "",
-      status: "active"
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Simulate fingerprint capture
+  const simulateCapture = async () => {
+    setIsCapturing(true);
+    // Simulate capture delay
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    if (editingRecord) {
-      updateMutation.mutate({ id: editingRecord.id, data: formData });
-    } else {
-      // Generate mock fingerprint for new records
-      const mockFingerprint = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-      createMutation.mutate({ ...formData, fingerprintData: mockFingerprint });
+    // Generate mock fingerprint data
+    const mockFingerprint = `data:image/png;base64,${btoa(Math.random().toString())}`;
+    setFingerprintData(mockFingerprint);
+    setIsCapturing(false);
+    
+    toast({
+      title: "Captura completa",
+      description: "Huella dactilar capturada exitosamente",
+    });
+  };
+
+  // Fetch all electoral records for searching
+  const { data: allRecords = [], isLoading: isLoadingRecords } = useQuery<ElectoralRegistry[]>({
+    queryKey: ["/api/padron"],
+  });
+
+  // Search function
+  const performSearch = () => {
+    if (!identifier.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Campo requerido",
+        description: "Ingresa un RFC o CURP para buscar",
+      });
+      return;
+    }
+
+    const searchTerm = identifier.trim().toUpperCase();
+    const results = allRecords.filter(record => {
+      if (identifierType === "curp") {
+        return record.curp.includes(searchTerm);
+      } else {
+        return record.rfc?.includes(searchTerm);
+      }
+    });
+
+    setSearchResults(results);
+    setShowSearchResults(true);
+    setValidationResult(null);
+
+    toast({
+      title: "Búsqueda completada",
+      description: `Se encontraron ${results.length} resultado(s)`,
+    });
+  };
+
+  // Select a record from search results
+  const selectRecord = (record: ElectoralRegistry) => {
+    setSelectedRecord(record);
+    setShowRecordDetail(true);
+    setShowSearchResults(false);
+  };
+
+  // Individual record validation mutation
+  const validateRecordMutation = useMutation({
+    mutationFn: async (record: ElectoralRegistry) => {
+      if (!fingerprintData) {
+        throw new Error("Primero captura una huella dactilar");
+      }
+
+      const response = await apiRequest("POST", "/api/biometria/validar", {
+        curp: record.curp,
+        fingerprintData
+      });
+      return response.json();
+    },
+    onSuccess: (data, record) => {
+      setValidationResult({
+        matchingPercentage: data.matchingPercentage || 0,
+        status: data.status || "failed",
+        threshold: data.threshold || 85,
+        record: record
+      });
+      
+      toast({
+        title: data.status === "success" ? "Validación exitosa" : "Validación fallida",
+        description: `Coincidencia: ${data.matchingPercentage}%`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error en validación",
+        description: error.message || "Error desconocido",
+      });
+    }
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "success":
+        return "bg-green-500/20 text-green-400";
+      case "failed":
+        return "bg-red-500/20 text-red-400";
+      case "active":
+        return "bg-green-500/20 text-green-400";
+      case "inactive":
+        return "bg-red-500/20 text-red-400";
+      default:
+        return "bg-yellow-500/20 text-yellow-400";
     }
   };
 
-  const handleEdit = (record: ElectoralRegistry) => {
-    setEditingRecord(record);
-    setFormData({
-      curp: record.curp,
-      fullName: record.fullName,
-      ineNumber: record.ineNumber,
-      rfc: record.rfc || "",
-      fingerprintData: record.fingerprintData,
-      status: record.status
-    });
-    setShowAddDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setShowAddDialog(false);
-    setEditingRecord(null);
-    resetForm();
-  };
-
-  const getStatusBadge = (status: string) => {
-    const isActive = status === "active";
-    return (
-      <Badge className={isActive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
-        {isActive ? "ACTIVO" : "INACTIVO"}
-      </Badge>
-    );
-  };
-
-  const handleViewDetails = (record: ElectoralRegistry) => {
-    setViewingRecord(record);
-    setShowDetailsDialog(true);
+  const getConfidenceLevel = (percentage: number) => {
+    if (percentage >= 85) return { level: "ALTO", color: "text-green-400" };
+    if (percentage >= 70) return { level: "MEDIO", color: "text-yellow-400" };
+    return { level: "BAJO", color: "text-red-400" };
   };
 
   return (
     <div className="space-y-6">
+      {/* Header with Date */}
       <Card className="bg-dark-surface terminal-border">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg font-mono font-bold text-matrix flex items-center">
+          <CardTitle className="text-xl font-mono font-bold text-matrix flex items-center justify-between">
+            <div className="flex items-center">
               <Database className="mr-2" />
-              Padrón Electoral Digitalizado
-            </CardTitle>
-            <Dialog open={showAddDialog} onOpenChange={handleCloseDialog}>
-              <DialogTrigger asChild>
-                <Button 
-                  onClick={() => setShowAddDialog(true)}
-                  className="bg-matrix text-black font-mono text-sm px-4 py-2 hover:bg-opacity-80"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nuevo Registro
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-dark-surface border-dark-border max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-matrix font-mono">
-                    {editingRecord ? "Editar Registro" : "Nuevo Registro Electoral"}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-gray-300 font-mono">CURP</Label>
-                      <Input
-                        value={formData.curp}
-                        onChange={(e) => setFormData({ ...formData, curp: e.target.value })}
-                        className="bg-black terminal-border text-matrix font-mono"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-gray-300 font-mono">Número INE</Label>
-                      <Input
-                        value={formData.ineNumber}
-                        onChange={(e) => setFormData({ ...formData, ineNumber: e.target.value })}
-                        className="bg-black terminal-border text-matrix font-mono"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-gray-300 font-mono">Nombre Completo</Label>
-                    <Input
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="bg-black terminal-border text-matrix font-mono"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-gray-300 font-mono">RFC</Label>
-                      <Input
-                        value={formData.rfc}
-                        onChange={(e) => setFormData({ ...formData, rfc: e.target.value })}
-                        className="bg-black terminal-border text-matrix font-mono"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-gray-300 font-mono">Estado</Label>
-                      <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                        <SelectTrigger className="bg-black terminal-border text-matrix font-mono">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-black border-dark-border">
-                          <SelectItem value="active">Activo</SelectItem>
-                          <SelectItem value="inactive">Inactivo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleCloseDialog}
-                      className="border-dark-border text-gray-400 font-mono"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={createMutation.isPending || updateMutation.isPending}
-                      className="bg-matrix text-black font-mono"
-                    >
-                      {editingRecord ? "Actualizar" : "Crear"} Registro
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+              Padrón Electoral Digitalizado 2025
+            </div>
+            <div className="flex items-center text-sm text-gray-400">
+              <Calendar className="mr-2 h-4 w-4" />
+              {currentDate}
+            </div>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Search and Filters */}
-          <div className="grid md:grid-cols-4 gap-4 mb-6">
-            <Input
-              placeholder="Buscar por nombre..."
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-              className="bg-black terminal-border text-matrix font-mono placeholder-gray-600"
-            />
-            <Input
-              placeholder="Filtrar por CURP..."
-              value={searchCurp}
-              onChange={(e) => setSearchCurp(e.target.value)}
-              className="bg-black terminal-border text-matrix font-mono placeholder-gray-600"
-            />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-black terminal-border text-matrix font-mono">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-black border-dark-border">
-                <SelectItem value="all">Estado: Todos</SelectItem>
-                <SelectItem value="active">Activo</SelectItem>
-                <SelectItem value="inactive">Inactivo</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={() => {
-                // Apply filters - could enhance this functionality
-                toast({
-                  title: "Filtros aplicados",
-                  description: `Mostrando ${records.length} registros`,
-                });
-              }}
-              className="bg-cyber text-white font-mono hover:bg-opacity-80"
-            >
-              <Search className="mr-2 h-4 w-4" />
-              Buscar
-            </Button>
+          <div className="text-sm font-mono text-gray-400">
+            Sistema Nacional de Identificación Biométrica • Registro Electoral Mexicano
           </div>
-
-          {/* Data Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-dark-border">
-                  <TableHead className="text-matrix font-mono">ID</TableHead>
-                  <TableHead className="text-matrix font-mono">Nombre Completo</TableHead>
-                  <TableHead className="text-matrix font-mono">CURP</TableHead>
-                  <TableHead className="text-matrix font-mono">INE</TableHead>
-                  <TableHead className="text-matrix font-mono">RFC</TableHead>
-                  <TableHead className="text-matrix font-mono">Estado</TableHead>
-                  <TableHead className="text-matrix font-mono">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-400 font-mono">
-                      Cargando registros...
-                    </TableCell>
-                  </TableRow>
-                ) : records.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-400 font-mono">
-                      No se encontraron registros
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  records.map((record) => (
-                    <TableRow key={record.id} className="border-b border-gray-700 hover:bg-gray-800/30">
-                      <TableCell className="text-cyber font-mono">{record.id.toString().padStart(3, '0')}</TableCell>
-                      <TableCell className="font-mono">{record.fullName}</TableCell>
-                      <TableCell className="text-yellow-400 font-mono">{record.curp}</TableCell>
-                      <TableCell className="font-mono">{record.ineNumber}</TableCell>
-                      <TableCell className="text-cyber font-mono">{record.rfc || "-"}</TableCell>
-                      <TableCell>{getStatusBadge(record.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleViewDetails(record)}
-                            className="text-cyber hover:text-blue-300"
-                            title="Ver detalles y huella"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(record)}
-                            className="text-yellow-400 hover:text-yellow-300"
-                            title="Editar"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => deleteMutation.mutate(record.id)}
-                            className="text-red-400 hover:text-red-300"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex justify-between items-center mt-6 text-sm font-mono">
-            <div className="text-gray-400">
-              Mostrando {records.length} registros
-            </div>
-            <div className="flex space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-dark-border text-gray-400 font-mono"
-                disabled
-              >
-                Anterior
-              </Button>
-              <Button
-                size="sm"
-                className="bg-matrix text-black font-mono"
-              >
-                1
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-dark-border text-gray-400 font-mono"
-                disabled
-              >
-                Siguiente
-              </Button>
-            </div>
+          <div className="text-xs font-mono text-cyan-400 mt-2">
+            Total de registros activos: {allRecords.filter(r => r.status === "active").length} ciudadanos
           </div>
         </CardContent>
       </Card>
 
-      {/* Details Dialog */}
-      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="bg-dark-surface border-dark-border max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-matrix font-mono flex items-center">
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Search Panel */}
+        <Card className="bg-dark-surface terminal-border">
+          <CardHeader>
+            <CardTitle className="text-lg font-mono font-bold text-matrix flex items-center">
+              <UserSearch className="mr-2" />
+              Búsqueda de Identidad
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="block text-gray-300 text-sm font-mono mb-2">
+                Tipo de Búsqueda:
+              </Label>
+              <Select value={identifierType} onValueChange={(value: any) => setIdentifierType(value)}>
+                <SelectTrigger className="w-full bg-black terminal-border text-matrix font-mono">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-black border-dark-border">
+                  <SelectItem value="curp">CURP</SelectItem>
+                  <SelectItem value="rfc">RFC</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="block text-gray-300 text-sm font-mono mb-2">
+                Número de Identificación:
+              </Label>
+              <Input
+                type="text"
+                placeholder={
+                  identifierType === "curp" ? "Ej: LOSM920715MDFPPR08" :
+                  "Ej: LOSM920715M87"
+                }
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
+                className="w-full bg-black terminal-border text-matrix font-mono placeholder-gray-600"
+              />
+              <div className="text-xs text-gray-500 font-mono mt-1">
+                {identifierType === "curp" && "Busca parcial o completa. Ej: LOSM920715MDFPPR08, MARC880523HDFTRR05"}
+                {identifierType === "rfc" && "Busca parcial o completa. Ej: LOSM920715M87, MARC880523H76"}
+              </div>
+            </div>
+
+            <Button
+              onClick={performSearch}
+              disabled={isLoadingRecords || !identifier}
+              className="w-full bg-cyber text-white font-mono font-bold py-3 px-4 hover:bg-opacity-80 transition-all"
+            >
+              <UserSearch className="mr-2 h-4 w-4" />
+              {isLoadingRecords ? "CARGANDO..." : "BUSCAR EN PADRÓN"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Biometric Scanner */}
+        <Card className="bg-dark-surface terminal-border">
+          <CardHeader>
+            <CardTitle className="text-lg font-mono font-bold text-matrix flex items-center">
               <Fingerprint className="mr-2" />
-              Detalles del Ciudadano - {viewingRecord?.fullName}
+              Escáner Biométrico
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="fingerprint-scanner rounded-full w-48 h-48 mx-auto mb-4 flex items-center justify-center scan-line">
+              <Fingerprint className={`text-6xl text-matrix ${isCapturing ? 'animate-pulse' : ''}`} />
+            </div>
+
+            <div className="text-center space-y-3">
+              <div className="text-sm font-mono text-gray-400">Estado del escáner</div>
+              <div className="text-matrix font-mono font-bold">
+                {isCapturing ? "CAPTURANDO..." : fingerprintData ? "CAPTURA COMPLETA" : "LISTO PARA CAPTURA"}
+              </div>
+
+              <Button
+                onClick={simulateCapture}
+                disabled={isCapturing}
+                className={`w-full font-mono font-bold py-3 px-4 transition-all ${
+                  fingerprintData && !isCapturing
+                    ? "bg-green-500 text-white"
+                    : "bg-gradient-to-r from-matrix to-cyber text-black"
+                }`}
+              >
+                <Hand className="mr-2 h-4 w-4" />
+                {isCapturing ? "CAPTURANDO..." : fingerprintData ? "RECAPTURAR" : "INICIAR CAPTURA"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Results Panel */}
+      {validationResult && (
+        <Card className="bg-dark-surface terminal-border">
+          <CardHeader>
+            <CardTitle className="text-lg font-mono font-bold text-matrix flex items-center">
+              <TrendingUp className="mr-2" />
+              Resultado de Validación
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-6 mb-6">
+              <div className="bg-black rounded p-4 terminal-border">
+                <div className="text-sm font-mono text-gray-400 mb-1">Coincidencia Biométrica</div>
+                <div className="text-2xl font-mono font-bold text-matrix">
+                  {validationResult.matchingPercentage}%
+                </div>
+                <Progress 
+                  value={validationResult.matchingPercentage} 
+                  className="mt-2 bg-gray-700"
+                />
+              </div>
+
+              <div className="bg-black rounded p-4 terminal-border">
+                <div className="text-sm font-mono text-gray-400 mb-1">Estado en Padrón</div>
+                <div className="text-lg font-mono font-bold text-matrix">
+                  {validationResult.record?.status?.toUpperCase() || "N/A"}
+                </div>
+                <Badge className={`text-xs mt-1 ${getStatusColor(validationResult.record?.status || '')}`}>
+                  {validationResult.record?.status === "active" ? "Verificado ✓" : "Inactivo"}
+                </Badge>
+              </div>
+
+              <div className="bg-black rounded p-4 terminal-border">
+                <div className="text-sm font-mono text-gray-400 mb-1">Nivel de Confianza</div>
+                <div className={`text-lg font-mono font-bold ${getConfidenceLevel(validationResult.matchingPercentage).color}`}>
+                  {getConfidenceLevel(validationResult.matchingPercentage).level}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">Threshold: {validationResult.threshold}%+</div>
+              </div>
+            </div>
+
+            {/* Identity Information */}
+            {validationResult.record && (
+              <div className="bg-black rounded p-4 terminal-border">
+                <h3 className="font-mono font-bold text-matrix mb-3">Información de Identidad</h3>
+                <div className="grid md:grid-cols-2 gap-4 text-sm font-mono mb-4">
+                  <div>
+                    <span className="text-gray-400">Nombre:</span>{" "}
+                    <span>{validationResult.record.fullName}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">CURP:</span>{" "}
+                    <span className="text-yellow-400">{validationResult.record.curp}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">INE:</span>{" "}
+                    <span>{validationResult.record.ineNumber}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">RFC:</span>{" "}
+                    <span className="text-cyber">{validationResult.record.rfc || "N/A"}</span>
+                  </div>
+                </div>
+                
+                {/* Fingerprint Visualization */}
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="font-mono font-bold text-matrix mb-3 flex items-center">
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    Huella Dactilar Registrada
+                  </h4>
+                  <div className="bg-gray-900 rounded p-4 text-center">
+                    <div className="fingerprint-scanner rounded w-32 h-32 mx-auto mb-3 flex items-center justify-center">
+                      <Fingerprint className="text-4xl text-matrix animate-pulse" />
+                    </div>
+                    <div className="text-xs font-mono text-gray-400">
+                      Datos biométricos: {validationResult.record.curp.slice(-8)}****
+                    </div>
+                    <div className="text-xs font-mono text-green-400 mt-1">
+                      ✓ Huella registrada y verificada
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search Results Panel */}
+      {showSearchResults && (
+        <Card className="bg-dark-surface terminal-border">
+          <CardHeader>
+            <CardTitle className="text-lg font-mono font-bold text-matrix flex items-center justify-between">
+              <div className="flex items-center">
+                <UserSearch className="mr-2" />
+                Resultados de Búsqueda
+              </div>
+              <Badge className="bg-cyber text-black font-mono">
+                {searchResults.length} encontrado(s)
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {searchResults.length === 0 ? (
+              <div className="text-center py-8">
+                <UserSearch className="mx-auto h-12 w-12 text-gray-500 mb-4" />
+                <div className="text-gray-400 font-mono">No se encontraron resultados</div>
+                <div className="text-sm text-gray-500 font-mono mt-2">
+                  Intenta con otro {identifierType === "curp" ? "CURP" : "RFC"}
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-4 max-h-96 overflow-y-auto">
+                {searchResults.map((record, index) => (
+                  <div
+                    key={record.curp}
+                    className="bg-black rounded terminal-border p-4 hover:bg-gray-900 cursor-pointer transition-all group"
+                    onClick={() => selectRecord(record)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-matrix to-cyber rounded-full flex items-center justify-center">
+                          <User className="text-black h-6 w-6" />
+                        </div>
+                        <div>
+                          <div className="font-mono font-bold text-matrix group-hover:text-cyber transition-colors">
+                            {record.fullName}
+                          </div>
+                          <div className="text-sm text-gray-400 font-mono">
+                            CURP: {record.curp}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className={`text-xs mb-2 ${getStatusColor(record.status)}`}>
+                          {record.status === "active" ? "Activo" : "Inactivo"}
+                        </Badge>
+                        <div className="text-xs text-gray-500 font-mono">
+                          INE: {record.ineNumber}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm font-mono">
+                      <div>
+                        <span className="text-gray-400">RFC:</span>{" "}
+                        <span className="text-cyber">{record.rfc || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Estado:</span>{" "}
+                        <span className={record.status === "active" ? "text-green-400" : "text-red-400"}>
+                          {record.status === "active" ? "Verificado" : "Sin verificar"}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Fingerprint className="h-4 w-4 text-matrix" />
+                        <span className="text-xs font-mono text-gray-400">
+                          Biometría disponible
+                        </span>
+                      </div>
+                      <div className="text-xs font-mono text-matrix group-hover:text-cyber transition-colors">
+                        Click para ver detalles →
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Detailed Record View Modal */}
+      <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
+        <DialogContent className="bg-dark-surface terminal-border max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-mono font-bold text-matrix flex items-center">
+              <Eye className="mr-2" />
+              Perfil Biométrico Completo
             </DialogTitle>
           </DialogHeader>
           
-          {viewingRecord && (
+          {selectedRecord && (
             <div className="space-y-6">
-              {/* Personal Information */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card className="bg-black terminal-border">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-mono text-matrix">Información Personal</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm font-mono">
-                    <div>
-                      <span className="text-gray-400">ID:</span>{" "}
-                      <span className="text-cyber">{viewingRecord.id.toString().padStart(3, '0')}</span>
+              {/* Identity Header */}
+              <div className="bg-black rounded terminal-border p-4">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-matrix to-cyber rounded-full flex items-center justify-center">
+                    <User className="text-black h-8 w-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-mono font-bold text-matrix">{selectedRecord.fullName}</h2>
+                    <div className="text-sm text-gray-400 font-mono">
+                      Registro electoral verificado
                     </div>
-                    <div>
-                      <span className="text-gray-400">Nombre Completo:</span>{" "}
-                      <span className="text-white">{viewingRecord.fullName}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">CURP:</span>{" "}
-                      <span className="text-yellow-400">{viewingRecord.curp}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">INE:</span>{" "}
-                      <span className="text-white">{viewingRecord.ineNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">RFC:</span>{" "}
-                      <span className="text-cyber">{viewingRecord.rfc || "N/A"}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Estado:</span>{" "}
-                      {getStatusBadge(viewingRecord.status)}
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Fecha de Registro:</span>{" "}
-                      <span className="text-white">
-                        {viewingRecord.createdAt ? new Date(viewingRecord.createdAt).toLocaleDateString('es-MX') : "N/A"}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Biometric Information */}
-                <Card className="bg-black terminal-border">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-mono text-matrix flex items-center">
-                      <Fingerprint className="mr-2 h-4 w-4" />
-                      Datos Biométricos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <div className="fingerprint-scanner rounded-full w-32 h-32 mx-auto mb-4 flex items-center justify-center animate-glow">
-                      <Fingerprint className="text-5xl text-matrix animate-pulse" />
-                    </div>
-                    
-                    <div className="space-y-2 text-sm font-mono">
-                      <div className="text-green-400">
-                        ✓ Huella dactilar registrada
-                      </div>
-                      <div className="text-gray-400">
-                        Hash: {viewingRecord.fingerprintData.slice(0, 16)}...
-                      </div>
-                      <div className="text-gray-400">
-                        Algoritmo: SHA-256 + Minutiae
-                      </div>
-                      <div className="text-gray-400">
-                        Calidad: {Math.floor(Math.random() * 20) + 80}% 
-                      </div>
-                    </div>
-
-                    <div className="mt-4 p-3 bg-gray-900 rounded terminal-border">
-                      <div className="text-xs font-mono text-gray-400 text-left">
-                        Características detectadas:
-                      </div>
-                      <div className="text-xs font-mono text-matrix mt-1">
-                        • {Math.floor(Math.random() * 15) + 25} puntos de minutiae
-                        <br />
-                        • {Math.floor(Math.random() * 8) + 12} crestas papilares
-                        <br />
-                        • Patrón: {['Arco', 'Bucle', 'Verticilo'][Math.floor(Math.random() * 3)]}
-                        <br />
-                        • Índice de confiabilidad: {Math.floor(Math.random() * 10) + 90}%
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div className="ml-auto">
+                    <Badge className={`${getStatusColor(selectedRecord.status)} text-sm`}>
+                      {selectedRecord.status === "active" ? "ACTIVO ✓" : "INACTIVO"}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4 text-sm font-mono">
+                  <div className="bg-gray-900 rounded p-3">
+                    <div className="text-gray-400 mb-1">CURP</div>
+                    <div className="text-yellow-400 font-bold">{selectedRecord.curp}</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3">
+                    <div className="text-gray-400 mb-1">INE</div>
+                    <div className="text-matrix font-bold">{selectedRecord.ineNumber}</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3">
+                    <div className="text-gray-400 mb-1">RFC</div>
+                    <div className="text-cyber font-bold">{selectedRecord.rfc || "No disponible"}</div>
+                  </div>
+                </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="flex justify-end space-x-2 pt-4 border-t border-gray-700">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDetailsDialog(false)}
-                  className="border-dark-border text-gray-400 font-mono"
-                >
-                  Cerrar
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowDetailsDialog(false);
-                    handleEdit(viewingRecord);
-                  }}
-                  className="bg-yellow-500 text-black font-mono hover:bg-yellow-400"
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar Registro
-                </Button>
-                <Button
-                  onClick={() => {
-                    // Simulate biometric validation with this record
-                    toast({
-                      title: "Validación iniciada",
-                      description: `Iniciando validación biométrica para ${viewingRecord.fullName}`,
-                    });
-                    setShowDetailsDialog(false);
-                  }}
-                  className="bg-matrix text-black font-mono hover:bg-opacity-80"
-                >
-                  <Fingerprint className="mr-2 h-4 w-4" />
-                  Validar Biométrica
-                </Button>
+              {/* Biometric Data Visualization */}
+              <div className="bg-black rounded terminal-border p-4">
+                <h3 className="font-mono font-bold text-matrix mb-4 flex items-center">
+                  <Fingerprint className="mr-2" />
+                  Datos Biométricos Registrados
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Left Hand */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-mono text-gray-400 border-b border-gray-700 pb-2">
+                      MANO IZQUIERDA
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {["Pulgar", "Índice", "Medio", "Anular", "Meñique"].map((finger, index) => (
+                        <div key={`left-${index}`} className="bg-gray-900 rounded p-3 text-center">
+                          <div className="fingerprint-scanner w-16 h-16 mx-auto mb-2 flex items-center justify-center">
+                            <Fingerprint className="text-2xl text-matrix animate-pulse" />
+                          </div>
+                          <div className="text-xs font-mono text-gray-400">{finger} Izq.</div>
+                          <div className="text-xs font-mono text-green-400 mt-1">✓ Registrado</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Hand */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-mono text-gray-400 border-b border-gray-700 pb-2">
+                      MANO DERECHA
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {["Pulgar", "Índice", "Medio", "Anular", "Meñique"].map((finger, index) => (
+                        <div key={`right-${index}`} className="bg-gray-900 rounded p-3 text-center">
+                          <div className="fingerprint-scanner w-16 h-16 mx-auto mb-2 flex items-center justify-center">
+                            <Fingerprint className="text-2xl text-matrix animate-pulse" />
+                          </div>
+                          <div className="text-xs font-mono text-gray-400">{finger} Der.</div>
+                          <div className="text-xs font-mono text-green-400 mt-1">✓ Registrado</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Biometric Quality Indicators */}
+                <div className="mt-6 grid md:grid-cols-3 gap-4">
+                  <div className="bg-gray-900 rounded p-3 text-center">
+                    <div className="text-green-400 font-mono font-bold text-lg">98.5%</div>
+                    <div className="text-xs text-gray-400 font-mono">Calidad de Captura</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3 text-center">
+                    <div className="text-cyan-400 font-mono font-bold text-lg">512x512</div>
+                    <div className="text-xs text-gray-400 font-mono">Resolución (DPI)</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3 text-center">
+                    <div className="text-yellow-400 font-mono font-bold text-lg">ISO/IEC</div>
+                    <div className="text-xs text-gray-400 font-mono">Estándar</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Validation Actions */}
+              <div className="bg-black rounded terminal-border p-4">
+                <h3 className="font-mono font-bold text-matrix mb-4 flex items-center">
+                  <TrendingUp className="mr-2" />
+                  Acciones de Validación
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Button
+                    onClick={() => {
+                      setShowRecordDetail(false);
+                      validateRecordMutation.mutate(selectedRecord);
+                    }}
+                    disabled={!fingerprintData || validateRecordMutation.isPending}
+                    className="bg-gradient-to-r from-matrix to-cyber text-black font-mono font-bold py-3 px-4 hover:opacity-80 transition-all"
+                  >
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    {validateRecordMutation.isPending ? "VALIDANDO..." : "VALIDAR BIOMETRÍA"}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRecordDetail(false)}
+                    className="terminal-border text-matrix font-mono font-bold py-3 px-4 hover:bg-gray-900"
+                  >
+                    Cerrar Vista Detallada
+                  </Button>
+                </div>
+
+                {!fingerprintData && (
+                  <div className="mt-3 text-xs font-mono text-yellow-400 text-center">
+                    ⚠️ Primero captura una huella dactilar para validar
+                  </div>
+                )}
               </div>
             </div>
           )}

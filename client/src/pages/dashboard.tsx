@@ -99,7 +99,7 @@ export default function Dashboard() {
           {renderTabButton(
             "registry",
             <Database className="mr-2 h-4 w-4" />,
-            "Padrón Electoral"
+            "Padrón Electoral 2025"
           )}
           {renderTabButton(
             "history",
