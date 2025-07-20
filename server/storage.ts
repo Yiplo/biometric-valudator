@@ -76,12 +76,7 @@ export class MemStorage implements IStorage {
       { 
         username: "admin4", 
         displayName: "Administrador 4", 
-        allowedIPs: [
-          "192.168.1.93",
-          "fe80::5848:9fff:fe80:4a6b",
-          "2806:103e:2:306:5848:9fff:fe80:4a6b",
-          "2806:103e:2:306:ac1c:e60b:e4c7:6ece"
-        ]
+        allowedIPs: []
       }
     ];
 
