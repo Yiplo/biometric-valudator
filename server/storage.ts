@@ -85,46 +85,348 @@ export class MemStorage implements IStorage {
       this.users.set(adminUser.id, adminUser);
     }
 
-    // Create sample electoral records with more realistic fingerprint data
+    // Create sample electoral records organized by Mexican states
     const sampleRecords: Omit<ElectoralRegistry, 'id' | 'createdAt'>[] = [
+      // Aguascalientes
       {
-        curp: "LOSM920715MDFPPR08",
-        fullName: "MARÍA FERNANDA LÓPEZ SÁNCHEZ",
-        ineNumber: "9876543210987",
-        rfc: "LOSM920715M87",
-        fingerprintData: "FP_LOSM920715_A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4",
+        curp: "AGUÍ901015HAGRRL01",
+        fullName: "RAFAEL AGUILAR TORRES",
+        ineNumber: "1001234567890",
+        rfc: "AUTR901015A12",
+        state: "Aguascalientes",
+        fingerprintData: "FP_AGS_001",
         status: "active"
       },
       {
-        curp: "MARC880523HDFTRR05",
-        fullName: "CARLOS EDUARDO MARTÍNEZ RUIZ",
-        ineNumber: "5432167890543",
-        rfc: "MARC880523H76",
-        fingerprintData: "FP_MARC880523_B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5",
+        curp: "HERJ850722MAGRRS08",
+        fullName: "JULIA HERNÁNDEZ RODRÍGUEZ",
+        ineNumber: "1001234567891",
+        rfc: "HERJ850722M34",
+        state: "Aguascalientes",
+        fingerprintData: "FP_AGS_002",
+        status: "active"
+      },
+      // Baja California
+      {
+        curp: "LOSM920715HBCNPR08",
+        fullName: "MARIO LÓPEZ SÁNCHEZ",
+        ineNumber: "0201234567890",
+        rfc: "LOSM920715H87",
+        state: "Baja California",
+        fingerprintData: "FP_BC_001",
         status: "active"
       },
       {
-        curp: "GAHA950612MDFRNN03",
-        fullName: "ANA PATRICIA GARCÍA HERNÁNDEZ",
-        ineNumber: "1357924680135",
-        rfc: "GAHA950612M54",
-        fingerprintData: "FP_GAHA950612_C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5J6",
-        status: "inactive"
+        curp: "GARC880523MBCNRR05",
+        fullName: "CARLA GARCÍA RIVERA",
+        ineNumber: "0201234567891",
+        rfc: "GARC880523M76",
+        state: "Baja California",
+        fingerprintData: "FP_BC_002",
+        status: "active"
       },
+      // Baja California Sur
       {
-        curp: "PEMJ901208HDFRZN02",
-        fullName: "JUAN CARLOS PÉREZ MÉNDEZ", 
-        ineNumber: "2468013579246",
-        rfc: "PEMJ901208H43",
-        fingerprintData: "FP_PEMJ901208_D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5J6K7",
+        curp: "MARR950612HBCSRN03",
+        fullName: "RICARDO MARTÍNEZ RUIZ",
+        ineNumber: "0301234567890",
+        rfc: "MARR950612H54",
+        state: "Baja California Sur",
+        fingerprintData: "FP_BCS_001",
         status: "active"
       },
       {
-        curp: "ROGR850315MDFMRL04",
-        fullName: "ROSA MARÍA RODRÍGUEZ GÓMEZ",
-        ineNumber: "8642097531864",
-        rfc: "ROGR850315M21",
-        fingerprintData: "FP_ROGR850315_E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5J6K7L8",
+        curp: "GONZ901208MBCSRN02",
+        fullName: "SANDRA GONZÁLEZ NÚÑEZ",
+        ineNumber: "0301234567891",
+        rfc: "GONZ901208M43",
+        state: "Baja California Sur",
+        fingerprintData: "FP_BCS_002",
+        status: "active"
+      },
+      // Campeche
+      {
+        curp: "PERF850315HCMPRL04",
+        fullName: "FERNANDO PÉREZ RUIZ",
+        ineNumber: "0401234567890",
+        rfc: "PERF850315H21",
+        state: "Campeche",
+        fingerprintData: "FP_CAM_001",
+        status: "active"
+      },
+      {
+        curp: "RODM920715MCMPRL08",
+        fullName: "MARTHA RODRÍGUEZ LÓPEZ",
+        ineNumber: "0401234567891",
+        rfc: "RODM920715M87",
+        state: "Campeche",
+        fingerprintData: "FP_CAM_002",
+        status: "active"
+      },
+      // Chiapas
+      {
+        curp: "VAZJ880523HCHPZR05",
+        fullName: "JOSÉ VÁZQUEZ ZARATE",
+        ineNumber: "0701234567890",
+        rfc: "VAZJ880523H76",
+        state: "Chiapas",
+        fingerprintData: "FP_CHP_001",
+        status: "active"
+      },
+      {
+        curp: "CRUZ950612MCHPRZ03",
+        fullName: "ROSA CRUZ ZAPATA",
+        ineNumber: "0701234567891",
+        rfc: "CRUZ950612M54",
+        state: "Chiapas",
+        fingerprintData: "FP_CHP_002",
+        status: "active"
+      },
+      // Chihuahua
+      {
+        curp: "SANT901208HCHHNT02",
+        fullName: "ANTONIO SANTOS HERNÁNDEZ",
+        ineNumber: "0801234567890",
+        rfc: "SANT901208H43",
+        state: "Chihuahua",
+        fingerprintData: "FP_CHH_001",
+        status: "active"
+      },
+      {
+        curp: "VARG850315MCHHRL04",
+        fullName: "GLORIA VARGAS HERRERA",
+        ineNumber: "0801234567891",
+        rfc: "VARG850315M21",
+        state: "Chihuahua",
+        fingerprintData: "FP_CHH_002",
+        status: "active"
+      },
+      // Ciudad de México
+      {
+        curp: "JIMR920715HDFMRR08",
+        fullName: "RODRIGO JIMÉNEZ MORALES",
+        ineNumber: "0901234567890",
+        rfc: "JIMR920715H87",
+        state: "Ciudad de México",
+        fingerprintData: "FP_CDMX_001",
+        status: "active"
+      },
+      {
+        curp: "MORA880523MDFRLR05",
+        fullName: "ALEJANDRA MORALES RIVERA",
+        ineNumber: "0901234567891",
+        rfc: "MORA880523M76",
+        state: "Ciudad de México",
+        fingerprintData: "FP_CDMX_002",
+        status: "active"
+      },
+      // Coahuila
+      {
+        curp: "HERR950612HCOHRD03",
+        fullName: "DIEGO HERRERA RAMOS",
+        ineNumber: "0501234567890",
+        rfc: "HERR950612H54",
+        state: "Coahuila",
+        fingerprintData: "FP_COA_001",
+        status: "active"
+      },
+      {
+        curp: "LUNE901208MCOHLR02",
+        fullName: "ESPERANZA LUNA ESCOBAR",
+        ineNumber: "0501234567891",
+        rfc: "LUNE901208M43",
+        state: "Coahuila",
+        fingerprintData: "FP_COA_002",
+        status: "active"
+      },
+      // Colima
+      {
+        curp: "MEND850315HCOLRN04",
+        fullName: "NORBERTO MÉNDEZ DÍAZ",
+        ineNumber: "0601234567890",
+        rfc: "MEND850315H21",
+        state: "Colima",
+        fingerprintData: "FP_COL_001",
+        status: "active"
+      },
+      {
+        curp: "CAST920715MCOLST08",
+        fullName: "TERESA CASTILLO SANTOS",
+        ineNumber: "0601234567891",
+        rfc: "CAST920715M87",
+        state: "Colima",
+        fingerprintData: "FP_COL_002",
+        status: "active"
+      },
+      // Durango
+      {
+        curp: "GARJ880523HDRGRR05",
+        fullName: "JAVIER GARCÍA GUERRERO",
+        ineNumber: "1001234567890",
+        rfc: "GARJ880523H76",
+        state: "Durango",
+        fingerprintData: "FP_DUR_001",
+        status: "active"
+      },
+      {
+        curp: "RAMI950612MDRGMR03",
+        fullName: "IRMA RAMÍREZ GÓMEZ",
+        ineNumber: "1001234567891",
+        rfc: "RAMI950612M54",
+        state: "Durango",
+        fingerprintData: "FP_DUR_002",
+        status: "active"
+      },
+      // Guanajuato
+      {
+        curp: "ORTL901208HGTRRD02",
+        fullName: "LUIS ORTIZ HERRERA",
+        ineNumber: "1101234567890",
+        rfc: "ORTL901208H43",
+        state: "Guanajuato",
+        fingerprintData: "FP_GTO_001",
+        status: "active"
+      },
+      {
+        curp: "FLOW850315MGTRWR04",
+        fullName: "WENDY FLORES ORTIZ",
+        ineNumber: "1101234567891",
+        rfc: "FLOW850315M21",
+        state: "Guanajuato",
+        fingerprintData: "FP_GTO_002",
+        status: "active"
+      },
+      // Guerrero
+      {
+        curp: "DELR920715HGRRLN08",
+        fullName: "RUBÉN DELGADO LEÓN",
+        ineNumber: "1201234567890",
+        rfc: "DELR920715H87",
+        state: "Guerrero",
+        fingerprintData: "FP_GRO_001",
+        status: "active"
+      },
+      {
+        curp: "AGUI880523MGRGLR05",
+        fullName: "LORENA AGUILAR IBARRA",
+        ineNumber: "1201234567891",
+        rfc: "AGUI880523M76",
+        state: "Guerrero",
+        fingerprintData: "FP_GRO_002",
+        status: "active"
+      },
+      // Hidalgo
+      {
+        curp: "SOLM950612HHDGLR03",
+        fullName: "MIGUEL SOLIS GALVÁN",
+        ineNumber: "1301234567890",
+        rfc: "SOLM950612H54",
+        state: "Hidalgo",
+        fingerprintData: "FP_HGO_001",
+        status: "active"
+      },
+      {
+        curp: "BAUT901208MHDLTR02",
+        fullName: "RUTH BAUTISTA TORRES",
+        ineNumber: "1301234567891",
+        rfc: "BAUT901208M43",
+        state: "Hidalgo",
+        fingerprintData: "FP_HGO_002",
+        status: "active"
+      },
+      // Jalisco
+      {
+        curp: "CERR850315HJCLRR04",
+        fullName: "RAFAEL CERVANTES RUIZ",
+        ineNumber: "1401234567890",
+        rfc: "CERR850315H21",
+        state: "Jalisco",
+        fingerprintData: "FP_JAL_001",
+        status: "active"
+      },
+      {
+        curp: "NUÑP920715MJCLPR08",
+        fullName: "PATRICIA NÚÑEZ LÓPEZ",
+        ineNumber: "1401234567891",
+        rfc: "NUÑP920715M87",
+        state: "Jalisco",
+        fingerprintData: "FP_JAL_002",
+        status: "active"
+      },
+      // México
+      {
+        curp: "RIVS880523HMEXVR05",
+        fullName: "SERGIO RIVERA VEGA",
+        ineNumber: "1501234567890",
+        rfc: "RIVS880523H76",
+        state: "México",
+        fingerprintData: "FP_MEX_001",
+        status: "active"
+      },
+      {
+        curp: "TORV950612MMEXRL03",
+        fullName: "VIVIANA TORRES REYES",
+        ineNumber: "1501234567891",
+        rfc: "TORV950612M54",
+        state: "México",
+        fingerprintData: "FP_MEX_002",
+        status: "active"
+      },
+      // Michoacán
+      {
+        curp: "GUZD901208HMCHZR02",
+        fullName: "DAVID GUZMÁN ZAVALA",
+        ineNumber: "1601234567890",
+        rfc: "GUZD901208H43",
+        state: "Michoacán",
+        fingerprintData: "FP_MICH_001",
+        status: "active"
+      },
+      {
+        curp: "SALX850315MMCHXL04",
+        fullName: "XIMENA SALAZAR LÓPEZ",
+        ineNumber: "1601234567891",
+        rfc: "SALX850315M21",
+        state: "Michoacán",
+        fingerprintData: "FP_MICH_002",
+        status: "active"
+      },
+      // Morelos
+      {
+        curp: "CABF920715HMORBRR08",
+        fullName: "FERNANDO CABRERA BRAVO",
+        ineNumber: "1701234567890",
+        rfc: "CABF920715H87",
+        state: "Morelos",
+        fingerprintData: "FP_MOR_001",
+        status: "active"
+      },
+      {
+        curp: "GARYU880523MMORRR05",
+        fullName: "YURIDIA GARCÍA HERRERA",
+        ineNumber: "1701234567891",
+        rfc: "GARY880523M76",
+        state: "Morelos",
+        fingerprintData: "FP_MOR_002",
+        status: "active"
+      },
+      // Nayarit
+      {
+        curp: "MONJ950612HNAYND03",
+        fullName: "JORGE MONTOYA NAVARRO",
+        ineNumber: "1801234567890",
+        rfc: "MONJ950612H54",
+        state: "Nayarit",
+        fingerprintData: "FP_NAY_001",
+        status: "active"
+      },
+      {
+        curp: "IBAZ901208MNAYBR02",
+        fullName: "ZAIRA IBARRA BRIONES",
+        ineNumber: "1801234567891",
+        rfc: "IBAZ901208M43",
+        state: "Nayarit",
+        fingerprintData: "FP_NAY_002",
         status: "active"
       }
     ];

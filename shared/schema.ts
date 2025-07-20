@@ -14,6 +14,7 @@ export const electoralRegistry = pgTable("electoral_registry", {
   fullName: text("full_name").notNull(),
   ineNumber: text("ine_number").notNull().unique(),
   rfc: text("rfc"),
+  state: text("state").notNull(), // Estado de la República Mexicana
   fingerprintData: text("fingerprint_data").notNull(), // base64 encoded
   status: text("status").notNull().default("active"), // active | inactive
   createdAt: timestamp("created_at").defaultNow(),
