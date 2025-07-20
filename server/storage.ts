@@ -61,7 +61,7 @@ export class MemStorage implements IStorage {
     this.currentElectoralId = 1;
     this.currentValidationId = 1;
     this.currentInstitutionId = 1;
-    
+
     this.initializeData();
   }
 
@@ -517,7 +517,7 @@ export class MemStorage implements IStorage {
   async validateUser(username: string, password: string): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) return null;
-    
+
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
   }
@@ -558,7 +558,7 @@ export class MemStorage implements IStorage {
   async updateElectoralRecord(id: number, updateData: Partial<InsertElectoralRegistry>): Promise<ElectoralRegistry | undefined> {
     const existing = this.electoralRecords.get(id);
     if (!existing) return undefined;
-    
+
     const updated: ElectoralRegistry = { ...existing, ...updateData };
     this.electoralRecords.set(id, updated);
     return updated;

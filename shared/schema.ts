@@ -6,6 +6,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  allowedIPs: text("allowed_ips"), // JSON string array of allowed IP addresses
 });
 
 export const electoralRegistry = pgTable("electoral_registry", {
@@ -70,7 +71,9 @@ export const identityVerificationSchema = z.object({
 });
 
 // Types
-export type User = typeof users.$inferSelect;
+export type User = typeof users.$inferSelect & {
+  allowedIPs?: string[];
+};
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type ElectoralRegistry = typeof electoralRegistry.$inferSelect;

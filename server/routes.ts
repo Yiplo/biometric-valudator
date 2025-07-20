@@ -41,6 +41,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Check IP restrictions for specific users
+      if (user.allowedIPs && user.allowedIPs.length > 0) {
+        const clientIP = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string;
+        const isAllowedIP = user.allowedIPs.some(allowedIP => 
+          clientIP === allowedIP || 
+          clientIP?.includes(allowedIP) ||
+          allowedIP.includes(clientIP || '')
+        );
+        
+        if (!isAllowedIP) {
+          console.log(`[AUTH] User '${user.username}' attempted login from unauthorized IP: ${clientIP}`);
+          return res.status(403).json({ message: "Access denied from this IP address" });
+        }
+      }
+
       // Log successful login
       console.log(`[AUTH] User '${user.username}' logged in successfully from ${req.ip || 'unknown IP'}`);
       
