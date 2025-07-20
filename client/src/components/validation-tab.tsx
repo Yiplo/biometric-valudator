@@ -335,6 +335,242 @@ export default function ValidationTab() {
           </CardContent>
         </Card>
       )}
+
+      {/* Search Results Panel */}
+      {showSearchResults && (
+        <Card className="bg-dark-surface terminal-border">
+          <CardHeader>
+            <CardTitle className="text-lg font-mono font-bold text-matrix flex items-center justify-between">
+              <div className="flex items-center">
+                <UserSearch className="mr-2" />
+                Resultados de Búsqueda
+              </div>
+              <Badge className="bg-cyber text-black font-mono">
+                {searchResults.length} encontrado(s)
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {searchResults.length === 0 ? (
+              <div className="text-center py-8">
+                <UserSearch className="mx-auto h-12 w-12 text-gray-500 mb-4" />
+                <div className="text-gray-400 font-mono">No se encontraron resultados</div>
+                <div className="text-sm text-gray-500 font-mono mt-2">
+                  Intenta con otro {identifierType === "curp" ? "CURP" : "RFC"}
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-4 max-h-96 overflow-y-auto">
+                {searchResults.map((record, index) => (
+                  <div
+                    key={record.curp}
+                    className="bg-black rounded terminal-border p-4 hover:bg-gray-900 cursor-pointer transition-all group"
+                    onClick={() => selectRecord(record)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-matrix to-cyber rounded-full flex items-center justify-center">
+                          <User className="text-black h-6 w-6" />
+                        </div>
+                        <div>
+                          <div className="font-mono font-bold text-matrix group-hover:text-cyber transition-colors">
+                            {record.fullName}
+                          </div>
+                          <div className="text-sm text-gray-400 font-mono">
+                            CURP: {record.curp}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className={`text-xs mb-2 ${getStatusColor(record.status)}`}>
+                          {record.status === "active" ? "Activo" : "Inactivo"}
+                        </Badge>
+                        <div className="text-xs text-gray-500 font-mono">
+                          INE: {record.ineNumber}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm font-mono">
+                      <div>
+                        <span className="text-gray-400">RFC:</span>{" "}
+                        <span className="text-cyber">{record.rfc || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Estado:</span>{" "}
+                        <span className={record.status === "active" ? "text-green-400" : "text-red-400"}>
+                          {record.status === "active" ? "Verificado" : "Sin verificar"}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Fingerprint className="h-4 w-4 text-matrix" />
+                        <span className="text-xs font-mono text-gray-400">
+                          Biometría disponible
+                        </span>
+                      </div>
+                      <div className="text-xs font-mono text-matrix group-hover:text-cyber transition-colors">
+                        Click para ver detalles →
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Detailed Record View Modal */}
+      <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
+        <DialogContent className="bg-dark-surface terminal-border max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-mono font-bold text-matrix flex items-center">
+              <Eye className="mr-2" />
+              Perfil Biométrico Completo
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedRecord && (
+            <div className="space-y-6">
+              {/* Identity Header */}
+              <div className="bg-black rounded terminal-border p-4">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-matrix to-cyber rounded-full flex items-center justify-center">
+                    <User className="text-black h-8 w-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-mono font-bold text-matrix">{selectedRecord.fullName}</h2>
+                    <div className="text-sm text-gray-400 font-mono">
+                      Registro electoral verificado
+                    </div>
+                  </div>
+                  <div className="ml-auto">
+                    <Badge className={`${getStatusColor(selectedRecord.status)} text-sm`}>
+                      {selectedRecord.status === "active" ? "ACTIVO ✓" : "INACTIVO"}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4 text-sm font-mono">
+                  <div className="bg-gray-900 rounded p-3">
+                    <div className="text-gray-400 mb-1">CURP</div>
+                    <div className="text-yellow-400 font-bold">{selectedRecord.curp}</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3">
+                    <div className="text-gray-400 mb-1">INE</div>
+                    <div className="text-matrix font-bold">{selectedRecord.ineNumber}</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3">
+                    <div className="text-gray-400 mb-1">RFC</div>
+                    <div className="text-cyber font-bold">{selectedRecord.rfc || "No disponible"}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Biometric Data Visualization */}
+              <div className="bg-black rounded terminal-border p-4">
+                <h3 className="font-mono font-bold text-matrix mb-4 flex items-center">
+                  <Fingerprint className="mr-2" />
+                  Datos Biométricos Registrados
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Left Hand */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-mono text-gray-400 border-b border-gray-700 pb-2">
+                      MANO IZQUIERDA
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {["Pulgar", "Índice", "Medio", "Anular", "Meñique"].map((finger, index) => (
+                        <div key={`left-${index}`} className="bg-gray-900 rounded p-3 text-center">
+                          <div className="fingerprint-scanner w-16 h-16 mx-auto mb-2 flex items-center justify-center">
+                            <Fingerprint className="text-2xl text-matrix animate-pulse" />
+                          </div>
+                          <div className="text-xs font-mono text-gray-400">{finger} Izq.</div>
+                          <div className="text-xs font-mono text-green-400 mt-1">✓ Registrado</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Hand */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-mono text-gray-400 border-b border-gray-700 pb-2">
+                      MANO DERECHA
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {["Pulgar", "Índice", "Medio", "Anular", "Meñique"].map((finger, index) => (
+                        <div key={`right-${index}`} className="bg-gray-900 rounded p-3 text-center">
+                          <div className="fingerprint-scanner w-16 h-16 mx-auto mb-2 flex items-center justify-center">
+                            <Fingerprint className="text-2xl text-matrix animate-pulse" />
+                          </div>
+                          <div className="text-xs font-mono text-gray-400">{finger} Der.</div>
+                          <div className="text-xs font-mono text-green-400 mt-1">✓ Registrado</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Biometric Quality Indicators */}
+                <div className="mt-6 grid md:grid-cols-3 gap-4">
+                  <div className="bg-gray-900 rounded p-3 text-center">
+                    <div className="text-green-400 font-mono font-bold text-lg">98.5%</div>
+                    <div className="text-xs text-gray-400 font-mono">Calidad de Captura</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3 text-center">
+                    <div className="text-cyan-400 font-mono font-bold text-lg">512x512</div>
+                    <div className="text-xs text-gray-400 font-mono">Resolución (DPI)</div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-3 text-center">
+                    <div className="text-yellow-400 font-mono font-bold text-lg">ISO/IEC</div>
+                    <div className="text-xs text-gray-400 font-mono">Estándar</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Validation Actions */}
+              <div className="bg-black rounded terminal-border p-4">
+                <h3 className="font-mono font-bold text-matrix mb-4 flex items-center">
+                  <TrendingUp className="mr-2" />
+                  Acciones de Validación
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Button
+                    onClick={() => {
+                      setShowRecordDetail(false);
+                      validateRecordMutation.mutate(selectedRecord);
+                    }}
+                    disabled={!fingerprintData || validateRecordMutation.isPending}
+                    className="bg-gradient-to-r from-matrix to-cyber text-black font-mono font-bold py-3 px-4 hover:opacity-80 transition-all"
+                  >
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    {validateRecordMutation.isPending ? "VALIDANDO..." : "VALIDAR BIOMETRÍA"}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRecordDetail(false)}
+                    className="terminal-border text-matrix font-mono font-bold py-3 px-4 hover:bg-gray-900"
+                  >
+                    Cerrar Vista Detallada
+                  </Button>
+                </div>
+
+                {!fingerprintData && (
+                  <div className="mt-3 text-xs font-mono text-yellow-400 text-center">
+                    ⚠️ Primero captura una huella dactilar para validar
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
